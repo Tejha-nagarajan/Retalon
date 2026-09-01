@@ -2,9 +2,9 @@ namespace Retalon.Models.Entities;
 
 public class Role
 {
-    public Guid RoleID {  get; set; }
+    public Guid RoleId {  get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public ICollection<UserRole> Users { get; set; } = new List<UserRole>();
+    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }
 

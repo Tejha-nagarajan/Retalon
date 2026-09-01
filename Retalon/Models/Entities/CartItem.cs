@@ -4,7 +4,7 @@ public class CartItem
 {
     public long CartItemId { get; set; }
 
-    public long CartId { get; set; }
+    public Guid CartId { get; set; }
 
     public long ProductId { get; set; }
 
