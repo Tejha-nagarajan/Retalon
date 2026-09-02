@@ -65,6 +65,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpClient<IOpenFoodFactsService, OpenFoodFactsService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 // OpenAPI support
 builder.Services.AddOpenApi();
 //Database
