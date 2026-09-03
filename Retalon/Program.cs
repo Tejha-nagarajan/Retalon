@@ -66,6 +66,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.Configure<StripeSettings>(
     builder.Configuration.GetSection("Stripe"));
 
+// Email configuration
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("Email"));
+
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpClient<IOpenFoodFactsService, OpenFoodFactsService>();
@@ -75,6 +79,7 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 // OpenAPI support
 builder.Services.AddOpenApi();
 //Database

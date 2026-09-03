@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Retalon.Data;
 using Retalon.DTOs.Payments;
@@ -7,21 +8,25 @@ using Retalon.Models.Entities;
 using Retalon.Models.Enums;
 using Retalon.Services.Interfaces;
 using Stripe;
-using Microsoft.EntityFrameworkCore.Storage;
+using Stripe.Climate;
 
 namespace Retalon.Services;
+
 
 public class PaymentService : IPaymentService
 {
     private readonly ApplicationDbContext _context;
     private readonly StripeSettings _stripeSettings;
+    private readonly IEmailService _emailService;
 
     public PaymentService(
         ApplicationDbContext context,
-        IOptions<StripeSettings> stripeOptions)
+        IOptions<StripeSettings> stripeOptions,
+        IEmailService emailService)
     {
         _context = context;
         _stripeSettings = stripeOptions.Value;
+        _emailService = emailService;
     }
 
     public async Task<PaymentResponseDto?> CreatePaymentIntentAsync(
@@ -308,6 +313,13 @@ public class PaymentService : IPaymentService
         payment.Order.OrderStatus = OrderStatus.Confirmed;
         payment.Order.UpdatedDate = DateTime.UtcNow;
 
+        await _emailService.SendEmailAsync(
+            payment.Order.User.Email,
+            $"Retalon Order #{payment.Order.OrderId} Confirmed",
+            $"Your order #{payment.Order.OrderId} has been confirmed successfully. " +
+            $"Total amount: {payment.Order.TotalAmount:C}.",
+            cancellationToken);
+
         await _context.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
@@ -336,6 +348,7 @@ public class PaymentService : IPaymentService
     {
         var payment = await _context.Payment
             .Include(p => p.Order)
+            .ThenInclude(o => o.User)
             .FirstOrDefaultAsync(
                 p => p.PaymentId == request.PaymentId &&
                      p.Order.UserId == userId,
@@ -425,6 +438,13 @@ public class PaymentService : IPaymentService
 
         payment.Order.OrderStatus = OrderStatus.Confirmed;
         payment.Order.UpdatedDate = DateTime.UtcNow;
+
+        await _emailService.SendEmailAsync(
+            payment.Order.User.Email,
+            $"Retalon Order #{payment.Order.OrderId} Confirmed",
+            $"Your order #{payment.Order.OrderId} has been confirmed successfully. " +
+            $"Total amount: {payment.Order.TotalAmount:C}.",
+            cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
