@@ -54,4 +54,36 @@ public class PaymentController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpPost("confirm-test")]
+    public async Task<IActionResult> ConfirmTestPayment(
+    [FromBody] ConfirmTestPaymentRequestDto request,
+    CancellationToken cancellationToken)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        try
+        {
+            var result = await _paymentService.ConfirmTestPaymentAsync(
+                userId,
+                request,
+                cancellationToken);
+
+            if (result == null)
+                return NotFound("Payment not found.");
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

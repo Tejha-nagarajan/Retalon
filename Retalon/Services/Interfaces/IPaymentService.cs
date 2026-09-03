@@ -12,4 +12,9 @@ public interface IPaymentService
     string json,
     string stripeSignature,
     CancellationToken cancellationToken = default);
+
+    Task<PaymentResponseDto?> ConfirmTestPaymentAsync(
+    Guid userId,
+    ConfirmTestPaymentRequestDto request,
+    CancellationToken cancellationToken = default);
 }

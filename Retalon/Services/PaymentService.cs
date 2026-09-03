@@ -312,4 +312,123 @@ public class PaymentService : IPaymentService
 
         await transaction.CommitAsync(cancellationToken);
     }
+
+    private static PaymentResponseDto MapPaymentToDto(Payment payment)
+    {
+        return new PaymentResponseDto
+        {
+            PaymentId = payment.PaymentId,
+            OrderId = payment.OrderId,
+            StripePaymentIntentId = payment.StripePaymentIntentId,
+            Amount = payment.Amount,
+            Currency = payment.Currency,
+            PaymentStatus = payment.PaymentStatus.ToString(),
+            ClientSecret = null,
+            FailureReason = payment.FailureReason,
+            CreatedDate = payment.CreatedDate,
+            UpdatedDate = payment.UpdatedDate
+        };
+    }
+    public async Task<PaymentResponseDto?> ConfirmTestPaymentAsync(
+    Guid userId,
+    ConfirmTestPaymentRequestDto request,
+    CancellationToken cancellationToken = default)
+    {
+        var payment = await _context.Payment
+            .Include(p => p.Order)
+            .FirstOrDefaultAsync(
+                p => p.PaymentId == request.PaymentId &&
+                     p.Order.UserId == userId,
+                cancellationToken);
+
+        if (payment == null)
+            return null;
+
+        if (payment.PaymentStatus == PaymentStatus.Succeeded)
+            return MapPaymentToDto(payment);
+
+        if (payment.Order.OrderStatus == OrderStatus.Cancelled)
+            throw new InvalidOperationException(
+                "Cancelled orders cannot be paid.");
+
+        if (string.IsNullOrWhiteSpace(_stripeSettings.SecretKey))
+            throw new InvalidOperationException(
+                "Stripe test secret key is not configured.");
+
+        StripeConfiguration.ApiKey = _stripeSettings.SecretKey;
+
+        var paymentIntentService = new PaymentIntentService();
+
+        var paymentIntent = await paymentIntentService.ConfirmAsync(
+            payment.StripePaymentIntentId,
+            new PaymentIntentConfirmOptions
+            {
+                PaymentMethod = request.TestPaymentMethod
+            },
+            cancellationToken: cancellationToken);
+
+        if (paymentIntent.Status != "succeeded")
+        {
+            throw new InvalidOperationException(
+                $"Test payment was not successful. Stripe status: {paymentIntent.Status}");
+        }
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync(cancellationToken);
+
+        var orderItems = await _context.OrderItems
+            .Where(i => i.OrderId == payment.OrderId)
+            .ToListAsync(cancellationToken);
+
+        var productIds = orderItems
+            .Select(i => i.ProductId)
+            .Distinct()
+            .ToList();
+
+        var inventories = await _context.Inventories
+            .Where(i => productIds.Contains(i.ProductId))
+            .ToDictionaryAsync(
+                i => i.ProductId,
+                cancellationToken);
+
+        foreach (var item in orderItems)
+        {
+            if (!inventories.TryGetValue(item.ProductId, out var inventory))
+                throw new InvalidOperationException(
+                    $"Inventory not found for product {item.ProductId}.");
+
+            var availableAfterReservation =
+                inventory.QuantityAvailable -
+                inventory.QuantityReserved;
+
+            if (availableAfterReservation < item.Quantity)
+                throw new InvalidOperationException(
+                    $"Insufficient inventory for product {item.ProductId}.");
+        }
+
+        foreach (var item in orderItems)
+        {
+            var inventory = inventories[item.ProductId];
+
+            inventory.QuantityAvailable -= item.Quantity;
+
+            inventory.QuantityReserved =
+                Math.Max(
+                    0,
+                    inventory.QuantityReserved - item.Quantity);
+
+            inventory.LastUpdated = DateTime.UtcNow;
+        }
+
+        payment.PaymentStatus = PaymentStatus.Succeeded;
+        payment.UpdatedDate = DateTime.UtcNow;
+
+        payment.Order.OrderStatus = OrderStatus.Confirmed;
+        payment.Order.UpdatedDate = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return MapPaymentToDto(payment);
+    }
 }

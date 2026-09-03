@@ -6,5 +6,6 @@ public enum ProcurementStatus
     Requested,
     Ordered,
     Received,
-    Cancelled
+    Cancelled,
+    Completed
 }

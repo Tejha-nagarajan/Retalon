@@ -74,6 +74,7 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IProcurementService, ProcurementService>();
 // OpenAPI support
 builder.Services.AddOpenApi();
 //Database
