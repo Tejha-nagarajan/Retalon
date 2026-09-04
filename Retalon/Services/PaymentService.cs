@@ -19,14 +19,18 @@ public class PaymentService : IPaymentService
     private readonly StripeSettings _stripeSettings;
     private readonly IEmailService _emailService;
 
+    private readonly IAuditService _auditService;
+
     public PaymentService(
         ApplicationDbContext context,
         IOptions<StripeSettings> stripeOptions,
-        IEmailService emailService)
+        IEmailService emailService,
+        IAuditService auditService)
     {
         _context = context;
         _stripeSettings = stripeOptions.Value;
         _emailService = emailService;
+        _auditService = auditService;
     }
 
     public async Task<PaymentResponseDto?> CreatePaymentIntentAsync(
@@ -439,12 +443,21 @@ public class PaymentService : IPaymentService
         payment.Order.OrderStatus = OrderStatus.Confirmed;
         payment.Order.UpdatedDate = DateTime.UtcNow;
 
+        await _auditService.LogAsync(
+            payment.Order.UserId,
+            "PaymentSucceeded",
+            "Payment",
+            payment.PaymentId.ToString(),
+            $"Payment succeeded for Order #{payment.OrderId}.");
+
         await _emailService.SendEmailAsync(
             payment.Order.User.Email,
             $"Retalon Order #{payment.Order.OrderId} Confirmed",
             $"Your order #{payment.Order.OrderId} has been confirmed successfully. " +
             $"Total amount: {payment.Order.TotalAmount:C}.",
             cancellationToken);
+
+
 
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

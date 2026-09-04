@@ -31,9 +31,19 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("LoginPolicy")]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {
-        var result = await _authService.LoginAsync(request);
+        try
+        {
+            var result = await _authService.LoginAsync(request);
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new
+            {
+                message = ex.Message
+            });
+        }
     }
 
     [HttpPost("refresh")]

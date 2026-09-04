@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Retalon.Data;
 using Retalon.DTOs.Auth;
 using Retalon.Models.Entities;
+using Retalon.Models.Enums;
 using Retalon.Services.Interfaces;
 
 namespace Retalon.Services;
@@ -11,15 +12,21 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly ITokenService _tokenService;
     private readonly IConfiguration _configuration;
+    private readonly IAuditService _auditService;
+    private readonly ISecurityEventService _securityEventService;
 
     public AuthService(
         ApplicationDbContext context,
         ITokenService tokenService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IAuditService auditService,
+        ISecurityEventService securityEventService)
     {
         _context = context;
         _tokenService = tokenService;
         _configuration = configuration;
+        _auditService = auditService;
+        _securityEventService = securityEventService;
     }
 
     public async Task<string> RegisterAsync(RegisterRequestDto request)
@@ -121,9 +128,23 @@ public class AuthService : IAuthService
             {
                 user.LockedUntil = DateTime.UtcNow.AddMinutes(15);
                 user.FailedLoginAttempts = 0;
-            }
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
+
+                await _securityEventService.LogAsync(
+                    user.UserId,
+                    SecurityEventType.AccountLocked,
+                    "Account locked after 5 failed login attempts.");
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+
+                await _securityEventService.LogAsync(
+                    user.UserId,
+                    SecurityEventType.FailedLogin,
+                    "Failed login attempt.");
+            }
 
             throw new UnauthorizedAccessException(
                 "Invalid email or password.");
@@ -132,6 +153,15 @@ public class AuthService : IAuthService
         user.FailedLoginAttempts = 0;
         user.LockedUntil = null;
         user.LastLoginDate = DateTime.UtcNow;
+
+        //Audit
+        await _auditService.LogAsync(
+            user.UserId,
+            "UserLogin",
+            "User",
+            user.UserId.ToString(),
+            "User logged in successfully.");
+
 
         var roles = user.UserRoles
             .Select(ur => ur.Role.Name)
@@ -251,6 +281,11 @@ public class AuthService : IAuthService
                     token.TokenHash))
             {
                 token.RevokedDate = DateTime.UtcNow;
+
+                await _securityEventService.LogAsync(
+                    token.UserId,
+                    SecurityEventType.TokenRevoked,
+                    "Refresh token revoked during logout.");
 
                 await _context.SaveChangesAsync();
 

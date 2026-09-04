@@ -10,10 +10,12 @@ namespace Retalon.Services;
 public class OrderService : IOrderService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAuditService _auditService;
 
-    public OrderService(ApplicationDbContext context)
+    public OrderService(ApplicationDbContext context, IAuditService auditService)
     {
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<CreateOrderResponseDto?> CreateOrderAsync(
@@ -120,6 +122,14 @@ public class OrderService : IOrderService
         _context.CartItems.RemoveRange(cart.CartItems);
 
         await _context.SaveChangesAsync(cancellationToken);
+        // Audit log entry for order creation
+        await _auditService.LogAsync(
+            userId,
+            "OrderCreated",
+            "Order",
+            order.OrderId.ToString(),
+            $"Order created with total amount {order.TotalAmount:C}",
+            cancellationToken);
 
         return new CreateOrderResponseDto
         {
