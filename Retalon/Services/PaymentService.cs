@@ -239,6 +239,7 @@ public class PaymentService : IPaymentService
 
         var payment = await _context.Payment
             .Include(p => p.Order)
+            .ThenInclude(o => o.User)
             .FirstOrDefaultAsync(
                 p => p.StripePaymentIntentId == paymentIntent.Id,
                 cancellationToken);

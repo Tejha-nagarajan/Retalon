@@ -129,8 +129,7 @@ public class CartService : ICartService
                 CartId = cart.CartId,
                 ProductId = request.ProductId,
                 Quantity = request.Quantity,
-                AddedDate = DateTime.UtcNow,
-                Product = product
+                AddedDate = DateTime.UtcNow
             });
         }
 
