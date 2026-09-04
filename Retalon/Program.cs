@@ -1,3 +1,5 @@
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +8,7 @@ using Retalon.Data;
 using Retalon.Extensions;
 using Retalon.Models.Configuration;
 using Retalon.Services;
+using Retalon.Services.BackgroundJobs;
 using Retalon.Services.Interfaces;
 using Scalar.AspNetCore;
 using Serilog;
@@ -23,6 +26,12 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddControllers();
 //Caching
 builder.Services.AddMemoryCache();
+//Hangfire configuration
+builder.Services.AddHangfire(config =>
+    config.UseSqlServerStorage(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHangfireServer();
 //Rate Limiting
 builder.Services.AddRateLimiter(options =>
 {
@@ -92,8 +101,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 // Application services
 builder.Services.AddApplicationServices();
+//Background job processing
+builder.Services.AddScoped<RetalonBackgroundJobs>();
 // App building
 var app = builder.Build();
+// Schedule the recurring job
+var recurringJobManager =
+    app.Services.GetRequiredService<IRecurringJobManager>();
+
+recurringJobManager.AddOrUpdate<RetalonBackgroundJobs>(
+    "retalon-test-job",
+    job => job.TestJob(),
+    Cron.Minutely);
 // Serilog request logging
 app.UseSerilogRequestLogging();
 
@@ -105,6 +124,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseHangfireDashboard();
 app.UseRateLimiter();
 
 app.UseAuthentication();
