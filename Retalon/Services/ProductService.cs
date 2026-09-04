@@ -5,6 +5,7 @@ using Retalon.Models.Entities;
 using Retalon.Models.Enums;
 using Retalon.Services.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
+using Retalon.DTOs.Common;
 
 namespace Retalon.Services;
 
@@ -24,53 +25,105 @@ public class ProductService : IProductService
         _cache = cache;
     }
 
-    public async Task<List<ProductResponseDto>> SearchProductsAsync(
-        string searchTerm,
-        CancellationToken cancellationToken = default)
+    public async Task<PagedResponseDto<ProductResponseDto>> SearchProductsAsync(
+    string searchTerm,
+    int page = 1,
+    int pageSize = 20,
+    string? sortBy = null,
+    bool descending = false,
+    CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            return new List<ProductResponseDto>();
+            return new PagedResponseDto<ProductResponseDto>
+            {
+                Page = page,
+                PageSize = pageSize
+            };
         }
+
+        if (page < 1)
+            page = 1;
+
+        if (pageSize < 1)
+            pageSize = 20;
+
+        if (pageSize > 100)
+            pageSize = 100;
 
         searchTerm = searchTerm.Trim();
 
-        var cacheKey = $"product-search:{searchTerm.ToLowerInvariant()}";
+        var cacheKey =
+            $"product-search:{searchTerm.ToLowerInvariant()}:{page}:{pageSize}:{sortBy}:{descending}";
 
         if (_cache.TryGetValue(
             cacheKey,
-            out List<ProductResponseDto>? cachedProducts))
+            out PagedResponseDto<ProductResponseDto>? cachedProducts))
         {
             return cachedProducts!;
         }
 
-        var localProducts = await _context.Products
+        var query = _context.Products
             .AsNoTracking()
             .Where(p =>
                 !p.IsDeleted &&
-                p.ProductStatus != Models.Enums.ProductStatus.Inactive &&
+                p.ProductStatus != ProductStatus.Inactive &&
                 (p.Name.Contains(searchTerm) ||
                  (p.Barcode != null &&
-                  p.Barcode.Contains(searchTerm))))
-            .OrderBy(p => p.Name)
-            .Take(20)
-            .Select(p => MapToDto(p))
-            .ToListAsync(cancellationToken);
+                  p.Barcode.Contains(searchTerm))));
 
-        if (localProducts.Count > 0)
+        query = sortBy?.ToLowerInvariant() switch
         {
+            "price" => descending
+                ? query.OrderByDescending(p => p.Price)
+                : query.OrderBy(p => p.Price),
+
+            "name" => descending
+                ? query.OrderByDescending(p => p.Name)
+                : query.OrderBy(p => p.Name),
+
+            "createddate" => descending
+                ? query.OrderByDescending(p => p.CreatedDate)
+                : query.OrderBy(p => p.CreatedDate),
+
+            _ => descending
+                ? query.OrderByDescending(p => p.Name)
+                : query.OrderBy(p => p.Name)
+        };
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        if (totalCount > 0)
+        {
+            var products = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => MapToDto(p))
+                .ToListAsync(cancellationToken);
+
+            var response = new PagedResponseDto<ProductResponseDto>
+            {
+                Items = products,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(
+                    totalCount / (double)pageSize)
+            };
+
             _cache.Set(
                 cacheKey,
-                localProducts,
+                response,
                 TimeSpan.FromMinutes(5));
 
-            return localProducts;
+            return response;
         }
 
+        // No local products found — search Open Food Facts.
         var externalProducts =
-    await _openFoodFactsService.SearchProductsAsync(
-        searchTerm,
-        cancellationToken);
+            await _openFoodFactsService.SearchProductsAsync(
+                searchTerm,
+                cancellationToken);
 
         var localResults = new List<ProductResponseDto>();
 
@@ -97,7 +150,8 @@ public class ProductService : IProductService
                     category = new Category
                     {
                         Name = "Imported",
-                        Description = "Products imported from external sources."
+                        Description =
+                            "Products imported from external sources."
                     };
 
                     _context.Categories.Add(category);
@@ -141,12 +195,45 @@ public class ProductService : IProductService
             localResults.Add(MapToDto(existingProduct));
         }
 
+        // Sort imported products.
+        localResults = sortBy?.ToLowerInvariant() switch
+        {
+            "price" => descending
+                ? localResults.OrderByDescending(p => p.Price).ToList()
+                : localResults.OrderBy(p => p.Price).ToList(),
+
+            "name" => descending
+                ? localResults.OrderByDescending(p => p.Name).ToList()
+                : localResults.OrderBy(p => p.Name).ToList(),
+
+            _ => descending
+                ? localResults.OrderByDescending(p => p.Name).ToList()
+                : localResults.OrderBy(p => p.Name).ToList()
+        };
+
+        var externalTotalCount = localResults.Count;
+
+        var pagedExternalResults = localResults
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var externalResponse = new PagedResponseDto<ProductResponseDto>
+        {
+            Items = pagedExternalResults,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = externalTotalCount,
+            TotalPages = (int)Math.Ceiling(
+                externalTotalCount / (double)pageSize)
+        };
+
         _cache.Set(
             cacheKey,
-            localResults,
+            externalResponse,
             TimeSpan.FromMinutes(5));
 
-        return localResults;
+        return externalResponse;
     }
 
     public async Task<ProductResponseDto?> GetProductByIdAsync(

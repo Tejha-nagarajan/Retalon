@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Retalon.Data;
 using Retalon.Extensions;
+using Retalon.Middleware;
 using Retalon.Models.Configuration;
 using Retalon.Services;
 using Retalon.Services.BackgroundJobs;
@@ -103,8 +104,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddApplicationServices();
 //Background job processing
 builder.Services.AddScoped<RetalonBackgroundJobs>();
+//API versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+});
+//Global Exception Handling Middleware
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 // App building
 var app = builder.Build();
+// Global Exception Handling Middleware
+app.UseExceptionHandler();
 // Schedule the recurring job
 var recurringJobManager =
     app.Services.GetRequiredService<IRecurringJobManager>();

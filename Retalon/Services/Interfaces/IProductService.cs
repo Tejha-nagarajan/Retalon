@@ -1,12 +1,17 @@
+using Retalon.DTOs.Common;
 using Retalon.DTOs.Products;
 
 namespace Retalon.Services.Interfaces;
 
 public interface IProductService
 {
-    Task<List<ProductResponseDto>> SearchProductsAsync(
-        string searchTerm,
-        CancellationToken cancellationToken = default);
+    Task<PagedResponseDto<ProductResponseDto>> SearchProductsAsync(
+    string searchTerm,
+    int page = 1,
+    int pageSize = 20,
+    string? sortBy = null,
+    bool descending = false,
+    CancellationToken cancellationToken = default);
 
     Task<ProductResponseDto?> GetProductByIdAsync(
         long productId,
