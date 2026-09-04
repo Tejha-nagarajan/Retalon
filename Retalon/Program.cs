@@ -21,6 +21,8 @@ builder.Host.UseSerilog((context, configuration) =>
 });
 // Add services to the container.
 builder.Services.AddControllers();
+//Caching
+builder.Services.AddMemoryCache();
 //Rate Limiting
 builder.Services.AddRateLimiter(options =>
 {
