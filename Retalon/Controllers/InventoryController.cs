@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Retalon.Services.Interfaces;
 
@@ -5,6 +6,7 @@ namespace Retalon.Controllers;
 
 [ApiController]
 [Route("api/inventory")]
+[Authorize]
 public class InventoryController : ControllerBase
 {
     private readonly IInventoryService _inventoryService;
@@ -36,6 +38,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPut("{productId:long}")]
+    [Authorize(Roles = "Admin,WarehouseManager")]
     public async Task<IActionResult> Update(
         long productId,
         [FromBody] UpdateInventoryRequest request,
@@ -72,6 +75,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("{productId:long}/restock")]
+    [Authorize(Roles = "Admin,WarehouseManager")]
     public async Task<IActionResult> Restock(
         long productId,
         [FromBody] RestockRequest request,

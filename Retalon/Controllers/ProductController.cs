@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Retalon.Services.Interfaces;
 using Microsoft.AspNetCore.RateLimiting;
+using Retalon.Services.Interfaces;
 namespace Retalon.Controllers;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [ApiVersion("1.0")]
@@ -17,6 +18,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("search")]
+    [AllowAnonymous]
     [EnableRateLimiting("SearchPolicy")]
     public async Task<IActionResult> Search(
     [FromQuery] string query,
@@ -47,6 +49,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("{productId:long}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(
         long productId,
         CancellationToken cancellationToken)
@@ -67,6 +70,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("barcode/{barcode}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetByBarcode(
         string barcode,
         CancellationToken cancellationToken)
@@ -87,6 +91,7 @@ public class ProductController : ControllerBase
         return Ok(product);
     }
     [HttpPost("import/{barcode}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Import(
     string barcode,
     CancellationToken cancellationToken)

@@ -1,7 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Retalon.DTOs.Auth;
 using Retalon.Services.Interfaces;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace Retalon.Controllers;
 
@@ -17,6 +18,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register(RegisterRequestDto request)
     {
         var result = await _authService.RegisterAsync(request);
@@ -28,6 +30,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [EnableRateLimiting("LoginPolicy")]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {
@@ -47,6 +50,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
+    [AllowAnonymous]
     public async Task<IActionResult> Refresh(
         RefreshTokenRequestDto request)
     {
@@ -56,6 +60,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
+    [AllowAnonymous]
     public async Task<IActionResult> Logout(
         LogoutRequestDto request)
     {

@@ -1,8 +1,9 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Retalon.DTOs.Payments;
 using Retalon.Services.Interfaces;
+using System.Security.Claims;
 
 namespace Retalon.Controllers;
 
@@ -19,6 +20,7 @@ public class PaymentController : ControllerBase
     }
 
     [HttpPost("create")]
+    [EnableRateLimiting("PaymentPolicy")]
     public async Task<IActionResult> CreatePayment(
         [FromBody] CreatePaymentRequestDto request,
         CancellationToken cancellationToken)
@@ -56,6 +58,7 @@ public class PaymentController : ControllerBase
     }
 
     [HttpPost("confirm-test")]
+    [EnableRateLimiting("PaymentPolicy")]
     public async Task<IActionResult> ConfirmTestPayment(
     [FromBody] ConfirmTestPaymentRequestDto request,
     CancellationToken cancellationToken)

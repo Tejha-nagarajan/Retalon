@@ -1,6 +1,7 @@
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -25,6 +26,21 @@ builder.Host.UseSerilog((context, configuration) =>
 });
 // Add services to the container.
 builder.Services.AddControllers();
+// Security Hardening
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "http://localhost:4200",
+                "https://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 //Caching
 builder.Services.AddMemoryCache();
 //Hangfire configuration
@@ -39,7 +55,7 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddFixedWindowLimiter("LoginPolicy", limiterOptions =>
     {
-        limiterOptions.PermitLimit = 5;
+        limiterOptions.PermitLimit = 10;
         limiterOptions.Window = TimeSpan.FromMinutes(1);
         limiterOptions.QueueLimit = 0;
     });
@@ -70,9 +86,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = jwtSettings["Audience"],
 
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(key))
+                Encoding.UTF8.GetBytes(key)),
+
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // Stripe 
 builder.Services.Configure<StripeSettings>(
@@ -137,6 +161,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Security hardening
+app.UseCors("FrontendPolicy");
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+
+    await next();
+});
 app.UseHangfireDashboard();
 app.UseRateLimiter();
 
@@ -145,6 +180,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Health Check Endpoint
+
 app.MapGet("/health", () =>
 {
     return Results.Ok(new
