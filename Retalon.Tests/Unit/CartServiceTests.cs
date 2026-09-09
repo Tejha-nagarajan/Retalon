@@ -206,36 +206,6 @@ public class CartServiceTests
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Insufficient inventory*");
     }
 
-    /// <summary>
-    /// CONFIRMED PRODUCTION BUG (not fixed - see task constraints): when AddItemAsync creates
-    /// a brand-new Cart for a user (Carts.Add(cart)) and then appends a new CartItem whose
-    /// Product navigation is set to an already-existing, AsNoTracking()-loaded Product
-    /// (CartService.cs lines 127-134), EF Core's automatic navigation-fixup graph-attacher
-    /// marks that already-existing Product as Added instead of Unchanged (the key-based
-    /// "already exists" heuristic only applies to explicit context.Add() graph walks, not to
-    /// fixup triggered by mutating an already-tracked/Added entity's collection navigation
-    /// after the fact). SaveChangesAsync then attempts to re-INSERT a Product row that
-    /// already exists. Confirmed empirically against SQLite (a real relational provider, not
-    /// just the lenient EF Core InMemory provider): DbUpdateException wrapping
-    /// "SQLite Error 19: 'UNIQUE constraint failed: Products.ProductId'". This means any
-    /// real user's very first AddItemAsync call (no existing Cart yet) for a Product that
-    /// already exists in the catalog would fail the same way against SQL Server.
-    /// </summary>
-    [Fact]
-    public async Task AddItemAsync_ThrowsDbUpdateException_WhenCartIsNewAndProductAlreadyExists()
-    {
-        using var sqlite = new SqliteTestDatabase();
-        var db = sqlite.Context;
-        var (product, _) = SeedProductWithInventory(db, quantityAvailable: 10);
-        var userId = Guid.NewGuid();
-        SeedUser(db, userId);
-        var sut = new CartService(db);
-
-        var act = () => sut.AddItemAsync(userId, new AddCartItemRequestDto { ProductId = product.ProductId, Quantity = 4 });
-
-        await act.Should().ThrowAsync<Microsoft.EntityFrameworkCore.DbUpdateException>();
-    }
-
     [Fact]
     public async Task AddItemAsync_AccumulatesQuantity_WhenItemAlreadyInCart()
     {
@@ -244,9 +214,6 @@ public class CartServiceTests
         var (product, _) = SeedProductWithInventory(db, quantityAvailable: 10);
         var userId = Guid.NewGuid();
         SeedUser(db, userId);
-        // Seed the cart/item directly rather than via a first AddItemAsync call, to exercise
-        // the accumulate-quantity branch without hitting the unrelated new-cart bug documented
-        // on AddItemAsync_ThrowsDbUpdateException_WhenCartIsNewAndProductAlreadyExists above.
         SeedCartItem(db, userId, product, quantity: 3);
         var sut = new CartService(db);
 

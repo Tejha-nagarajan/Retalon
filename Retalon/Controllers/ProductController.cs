@@ -11,10 +11,12 @@ using Microsoft.AspNetCore.Authorization;
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;
+    private readonly IVendorProductImportService _vendorProductImportService;
 
-    public ProductController(IProductService productService)
+    public ProductController(IProductService productService, IVendorProductImportService vendorProductImportService)
     {
         _productService = productService;
+        _vendorProductImportService = vendorProductImportService;
     }
 
     [HttpGet("search")]
@@ -110,5 +112,37 @@ public class ProductController : ControllerBase
         }
 
         return Ok(product);
+    }
+
+    [HttpPost("import/bulk")]
+    [Authorize(Roles = "Admin,WarehouseManager")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> ImportBulk(
+    IFormFile file,
+    CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                message = "Excel file is required."
+            });
+        }
+
+        var userIdClaim = User.FindFirst(
+            System.Security.Claims.ClaimTypes.NameIdentifier);
+
+        if (userIdClaim == null ||
+            !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _vendorProductImportService.ImportAsync(
+            file,
+            userId,
+            cancellationToken);
+
+        return Ok(result);
     }
 }

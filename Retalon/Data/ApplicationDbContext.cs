@@ -32,6 +32,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<AuditLog> auditLogs { get; set; }
     public DbSet<SecurityEvent> SecurityEvents { get; set; }
     public DbSet<SearchHistory> SearchHistories { get; set; }
+    public DbSet<ImportBatch> ImportBatches { get; set; }
 
     // Apply Fluent API configurations
 

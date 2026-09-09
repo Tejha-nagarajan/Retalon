@@ -118,6 +118,7 @@ builder.Services.AddScoped<IProcurementService, ProcurementService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ISecurityEventService, SecurityEventService>();
+builder.Services.AddScoped<IVendorProductImportService, VendorProductImportService>();
 // OpenAPI support
 builder.Services.AddOpenApi();
 //Database
@@ -156,8 +157,10 @@ app.UseSerilogRequestLogging();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi()
+        .AllowAnonymous();
+    app.MapScalarApiReference()
+        .AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
@@ -189,6 +192,7 @@ app.MapGet("/health", () =>
     });
 
 })
+.AllowAnonymous()
 .WithName("HealthCheck");
 
 // Health Check Endpoint for database
@@ -213,6 +217,7 @@ app.MapGet("/health/database", async (ApplicationDbContext db) =>
             statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 })
+    .AllowAnonymous()
 .WithName("DatabaseHealthCheck");
 
 app.Run();
