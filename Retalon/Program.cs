@@ -65,6 +65,12 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.Window = TimeSpan.FromMinutes(1);
         limiterOptions.QueueLimit = 0;
     });
+    options.AddFixedWindowLimiter("PaymentPolicy", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 20;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueLimit = 0;
+    });
 });
 //JWT configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

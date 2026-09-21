@@ -65,4 +65,19 @@ public static class DbSeedHelper
     {
         return db.Users.Single(u => u.Email == email).UserId;
     }
+
+    /// <summary>
+    /// Grants an additional role (e.g. "Admin", "WarehouseManager") to an already-registered
+    /// user, on top of the "Customer" role RegisterAsync assigns by default.
+    /// </summary>
+    public static async Task AssignRoleAsync(
+        ApplicationDbContext db,
+        Guid userId,
+        string roleName)
+    {
+        var role = db.Roles.Single(r => r.Name == roleName);
+
+        db.UserRoles.Add(new UserRole { UserId = userId, RoleId = role.RoleId });
+        await db.SaveChangesAsync();
+    }
 }

@@ -30,7 +30,11 @@ public class RetalonWebApplicationFactory : WebApplicationFactory<Program>
         {
             var overrides = new Dictionary<string, string?>
             {
-                ["ConnectionStrings:DefaultConnection"] = ConnectionString
+                ["ConnectionStrings:DefaultConnection"] = ConnectionString,
+                // The real signing key lives in User Secrets (never loaded under "Testing"),
+                // so tests need their own deterministic key or every JWT-authenticated
+                // request fails with IDX10703 (zero-length key) once options bind.
+                ["Jwt:Key"] = "test-signing-key-not-for-production-use-only-1234567890"
             };
 
             config.AddInMemoryCollection(overrides);

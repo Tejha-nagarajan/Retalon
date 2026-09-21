@@ -8,7 +8,7 @@ using Xunit;
 namespace Retalon.Tests.Integration;
 
 /// <summary>
-/// "LoginPolicy" is a fixed-window limiter (5 requests/minute) applied to
+/// "LoginPolicy" is a fixed-window limiter (10 requests/minute) applied to
 /// POST /api/auth/login. This uses the isolated RateLimitingFactoryFixture/collection
 /// so its global limiter state never bleeds into (or is polluted by) the shared
 /// "Integration" collection's Auth tests.
@@ -30,7 +30,7 @@ public class RateLimitingIntegrationTests
         var request = new LoginRequestDto { Email = "nobody@test.local", Password = "wrong" };
 
         HttpStatusCode? lastStatus = null;
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 11; i++)
         {
             var response = await client.PostAsJsonAsync("/api/auth/login", request);
             lastStatus = response.StatusCode;

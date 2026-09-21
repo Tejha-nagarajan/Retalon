@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Retalon.Entities;
 using Retalon.Models.Entities;
 namespace Retalon.Data;
 
@@ -33,6 +34,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<SecurityEvent> SecurityEvents { get; set; }
     public DbSet<SearchHistory> SearchHistories { get; set; }
     public DbSet<ImportBatch> ImportBatches { get; set; }
+    public DbSet<ImportBatchItem> ImportBatchItems { get; set; }
+
 
     // Apply Fluent API configurations
 

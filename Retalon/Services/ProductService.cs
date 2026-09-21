@@ -65,6 +65,8 @@ public class ProductService : IProductService
 
         var query = _context.Products
             .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.Inventory)
             .Where(p =>
                 !p.IsDeleted &&
                 p.ProductStatus != ProductStatus.Inactive &&
@@ -95,11 +97,14 @@ public class ProductService : IProductService
 
         if (totalCount > 0)
         {
-            var products = await query
+            var productEntities = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(p => MapToDto(p))
                 .ToListAsync(cancellationToken);
+
+            var products = productEntities
+                .Select(MapToDto)
+                .ToList(); ;
 
             var response = new PagedResponseDto<ProductResponseDto>
             {
@@ -342,7 +347,19 @@ public class ProductService : IProductService
             Price = product.Price,
             Currency = product.Currency,
             ImportSource = product.ImportSource,
-            ProductStatus = product.ProductStatus.ToString()
+            ProductStatus = product.ProductStatus.ToString(),
+
+            Inventory = product.Inventory == null
+                ? null
+                : new InventoryResponseDto
+                {
+                    QuantityAvailable = product.Inventory.QuantityAvailable,
+                    QuantityReserved = product.Inventory.QuantityReserved,
+                    SafetyStockLevel = product.Inventory.SafetyStockLevel,
+                    ProcurementLeadTimeDays =
+                        product.Inventory.ProcurementLeadTimeDays,
+                    LastUpdated = product.Inventory.LastUpdated
+                }
         };
     }
     public async Task<ProductResponseDto?> ImportFromOpenFoodFactsAsync(

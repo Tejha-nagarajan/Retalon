@@ -23,4 +23,19 @@ public class ProductResponseDto
     public string? ImportSource { get; set; }
 
     public string ProductStatus { get; set; } = string.Empty;
+
+    public InventoryResponseDto? Inventory { get; set; }
+}
+
+public class InventoryResponseDto
+{
+    public int QuantityAvailable { get; set; }
+
+    public int QuantityReserved { get; set; }
+
+    public int SafetyStockLevel { get; set; }
+
+    public int ProcurementLeadTimeDays { get; set; }
+
+    public DateTime LastUpdated { get; set; }
 }
