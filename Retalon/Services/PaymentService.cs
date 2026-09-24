@@ -7,6 +7,7 @@ using Retalon.Models.Configuration;
 using Retalon.Models.Entities;
 using Retalon.Models.Enums;
 using Retalon.Services.Interfaces;
+using Serilog;
 using Stripe;
 using Stripe.Climate;
 
@@ -318,16 +319,15 @@ public class PaymentService : IPaymentService
         payment.Order.OrderStatus = OrderStatus.Confirmed;
         payment.Order.UpdatedDate = DateTime.UtcNow;
 
-        await _emailService.SendEmailAsync(
-            payment.Order.User.Email,
-            $"Retalon Order #{payment.Order.OrderId} Confirmed",
-            $"Your order #{payment.Order.OrderId} has been confirmed successfully. " +
-            $"Total amount: {payment.Order.TotalAmount:C}.",
-            cancellationToken);
-
         await _context.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+
+        // The payment has already succeeded and been committed at this
+        // point - a failure to notify (SMTP down, bad creds, network
+        // blip) must never look like the payment itself failed, so it is
+        // sent after the commit and swallowed rather than rethrown.
+        await SendOrderConfirmationEmailAsync(payment, cancellationToken);
     }
 
     private static PaymentResponseDto MapPaymentToDto(Payment payment)
@@ -451,18 +451,36 @@ public class PaymentService : IPaymentService
             payment.PaymentId.ToString(),
             $"Payment succeeded for Order #{payment.OrderId}.");
 
-        await _emailService.SendEmailAsync(
-            payment.Order.User.Email,
-            $"Retalon Order #{payment.Order.OrderId} Confirmed",
-            $"Your order #{payment.Order.OrderId} has been confirmed successfully. " +
-            $"Total amount: {payment.Order.TotalAmount:C}.",
-            cancellationToken);
-
-
-
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
+        // See the comment in HandleWebhookAsync: send after commit, and
+        // never let a notification failure undo an already-succeeded
+        // payment.
+        await SendOrderConfirmationEmailAsync(payment, cancellationToken);
+
         return MapPaymentToDto(payment);
+    }
+
+    private async Task SendOrderConfirmationEmailAsync(
+        Payment payment,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _emailService.SendEmailAsync(
+                payment.Order.User.Email,
+                $"Retalon Order #{payment.Order.OrderId} Confirmed",
+                $"Your order #{payment.Order.OrderId} has been confirmed successfully. " +
+                $"Total amount: {payment.Order.TotalAmount:C}.",
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(
+                ex,
+                "Failed to send order confirmation email for Order #{OrderId}.",
+                payment.Order.OrderId);
+        }
     }
 }

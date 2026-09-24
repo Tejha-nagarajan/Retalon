@@ -1,0 +1,68 @@
+<section>
+
+  <h2>Inventory</h2>
+
+  <div class="search-box">
+    <input type="number" [(ngModel)]="productId" placeholder="Product ID" (keyup.enter)="lookup()">
+    <button class="primary-button" (click)="lookup()">Look Up</button>
+  </div>
+
+  <p *ngIf="message" [class]="isError ? 'error-message' : 'success-message'">{{ message }}</p>
+
+  <div class="details-box" *ngIf="inventory">
+
+    <h3>Inventory for Product #{{ inventory.productId }}</h3>
+
+    <p>Quantity Available: {{ inventory.quantityAvailable }}</p>
+    <p>Quantity Reserved: {{ inventory.quantityReserved }}</p>
+    <p>Safety Stock Level: {{ inventory.safetyStockLevel }}</p>
+    <p>Procurement Lead Time (days): {{ inventory.procurementLeadTimeDays }}</p>
+    <p>Available After Reservation: {{ inventory.quantityAfterReservation }}</p>
+    <p>
+      Low Stock:
+      <span [class]="inventory.isLowStock ? 'badge badge-danger' : 'badge badge-success'">{{ inventory.isLowStock ? 'Yes' : 'No' }}</span>
+    </p>
+    <p>Last Updated: {{ inventory.lastUpdated | date:'medium' }}</p>
+
+    <div *ngIf="isStaff()">
+
+      <hr>
+
+      <h3>Update Inventory</h3>
+
+      <div class="form-group">
+        <label>Quantity Available</label>
+        <input type="number" [(ngModel)]="editQuantityAvailable">
+      </div>
+
+      <div class="form-group">
+        <label>Quantity Reserved</label>
+        <input type="number" [(ngModel)]="editQuantityReserved">
+      </div>
+
+      <div class="form-group">
+        <label>Safety Stock Level</label>
+        <input type="number" [(ngModel)]="editSafetyStockLevel">
+      </div>
+
+      <div class="form-group">
+        <label>Procurement Lead Time (days)</label>
+        <input type="number" [(ngModel)]="editProcurementLeadTimeDays">
+      </div>
+
+      <button class="primary-button" (click)="saveChanges()">Save Changes</button>
+
+      <hr>
+
+      <h3>Restock</h3>
+
+      <div class="search-box">
+        <input type="number" min="1" [(ngModel)]="restockQuantity" placeholder="Quantity to add">
+        <button class="primary-button" (click)="restock()">Restock</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>

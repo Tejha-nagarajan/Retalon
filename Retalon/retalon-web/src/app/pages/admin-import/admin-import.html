@@ -1,0 +1,39 @@
+<section>
+
+  <h2>Bulk Product Import</h2>
+
+  <p class="hint">Upload an Excel file to import or update products in bulk. Admin or Warehouse Manager role required.</p>
+
+  <div class="search-box">
+    <input type="file" accept=".xlsx,.xls" (change)="onFileSelected($event)">
+    <button class="primary-button" [disabled]="isUploading" (click)="upload()">Upload</button>
+  </div>
+
+  <p *ngIf="message" [class]="isError ? 'error-message' : 'success-message'">{{ message }}</p>
+
+  <div class="card" *ngIf="result">
+
+    <p>Batch #{{ result.importBatchId }} - {{ result.status }}</p>
+    <p>Total Rows: {{ result.totalRows }}</p>
+    <p>Inserted: {{ result.inserted }}</p>
+    <p>Updated: {{ result.updated }}</p>
+    <p>Failed: {{ result.failed }}</p>
+
+    <table class="table" *ngIf="result.errors.length > 0">
+      <thead>
+        <tr>
+          <th>Row</th>
+          <th>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let error of result.errors">
+          <td>{{ error.rowNumber }}</td>
+          <td>{{ error.error }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+</section>

@@ -1,0 +1,108 @@
+<section>
+
+  <h2>Products</h2>
+
+  <div class="card" *ngIf="categories.length > 0">
+    <strong>Categories:</strong>
+    {{ categories.length }} available -
+    <span *ngFor="let category of categories; let last = last">
+      {{ category.name }}{{ last ? '' : ', ' }}
+    </span>
+  </div>
+
+  <div class="search-box">
+
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      placeholder="Search by product name or barcode"
+      (keyup.enter)="search()">
+
+    <select [(ngModel)]="sortBy">
+      <option value="">Sort: Name</option>
+      <option value="price">Sort: Price</option>
+      <option value="createdDate">Sort: Newest</option>
+    </select>
+
+    <label class="hint" style="display:flex; align-items:center; gap:6px;">
+      <input type="checkbox" style="width:auto;" [(ngModel)]="descending">
+      Descending
+    </label>
+
+    <button class="primary-button" (click)="search()">Search</button>
+
+  </div>
+
+  <p *ngIf="searchMessage" class="message">{{ searchMessage }}</p>
+  <p *ngIf="cartMessage" class="success-message">{{ cartMessage }}</p>
+
+  <div class="list" *ngIf="products.length > 0">
+
+    <div class="list-row" *ngFor="let product of products">
+
+      <div>
+        <h3>{{ product.name }}</h3>
+        <p>{{ product.description }}</p>
+        <span [class]="badgeClass(product.productStatus)">{{ product.productStatus }}</span>
+      </div>
+
+      <div>
+        <strong>{{ product.currency }} {{ product.price }}</strong>
+        <p>Stock: {{ product.inventory?.quantityAvailable ?? 0 }}</p>
+      </div>
+
+      <div class="row-actions">
+        <input
+          type="number"
+          min="1"
+          style="width:70px;"
+          [(ngModel)]="quantities[product.productId]"
+          placeholder="1">
+
+        <button class="secondary-button" (click)="viewProduct(product)">Details</button>
+        <button class="primary-button" (click)="addToCart(product, quantities[product.productId])">Add to Cart</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="row-actions" *ngIf="totalPages > 1" style="margin-top:15px;">
+    <button class="secondary-button" [disabled]="page <= 1" (click)="goToPage(page - 1)">Previous</button>
+    <span>Page {{ page }} of {{ totalPages }}</span>
+    <button class="secondary-button" [disabled]="page >= totalPages" (click)="goToPage(page + 1)">Next</button>
+  </div>
+
+  <!-- PRODUCT DETAILS -->
+
+  <div class="details-box" *ngIf="selectedProduct">
+
+    <h2>{{ selectedProduct.name }}</h2>
+    <p>{{ selectedProduct.description }}</p>
+    <p>Price: {{ selectedProduct.currency }} {{ selectedProduct.price }}</p>
+    <p>Barcode: {{ selectedProduct.barcode || 'N/A' }}</p>
+    <p>Stock: {{ selectedProduct.inventory?.quantityAvailable ?? 0 }}</p>
+
+    <button class="primary-button" (click)="addToCart(selectedProduct, quantities[selectedProduct.productId])">Add to Cart</button>
+    <button class="secondary-button" (click)="closeProduct()">Close</button>
+
+  </div>
+
+  <!-- BARCODE TOOLS -->
+
+  <div class="card" style="margin-top:30px;">
+
+    <h3>Barcode Tools</h3>
+    <p class="hint">Look up a product by barcode, or import one from Open Food Facts if it isn't in the catalog yet.</p>
+
+    <div class="search-box">
+      <input type="text" [(ngModel)]="barcodeInput" placeholder="Enter barcode">
+      <button class="secondary-button" (click)="lookupBarcode()">Look Up</button>
+      <button class="primary-button" (click)="importBarcode()">Import from Open Food Facts</button>
+    </div>
+
+    <p *ngIf="barcodeMessage" class="message">{{ barcodeMessage }}</p>
+
+  </div>
+
+</section>

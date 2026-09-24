@@ -1,0 +1,135 @@
+<section>
+
+  <h2>My Orders</h2>
+
+  <p *ngIf="message" [class]="isError ? 'error-message' : 'success-message'">{{ message }}</p>
+
+  <div *ngIf="orders.length === 0">
+    <p>You have no orders yet. Add products to your cart and place an order.</p>
+  </div>
+
+  <table class="table" *ngIf="orders.length > 0">
+    <thead>
+      <tr>
+        <th>Order #</th>
+        <th>Status</th>
+        <th>Total</th>
+        <th>Expected Delivery</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let order of orders">
+        <td>{{ order.orderId }}</td>
+        <td><span [class]="badgeClass(order.orderStatus)">{{ order.orderStatus }}</span></td>
+        <td>{{ order.totalAmount }}</td>
+        <td>{{ order.expectedDeliveryDate | date }}</td>
+        <td>
+          <button class="secondary-button" (click)="viewOrder(order)">View</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ORDER DETAIL -->
+
+  <div class="details-box" *ngIf="selectedOrder">
+
+    <h2>Order #{{ selectedOrder.orderId }}</h2>
+    <p>Status: <span [class]="badgeClass(selectedOrder.orderStatus)">{{ selectedOrder.orderStatus }}</span></p>
+    <p>Created: {{ selectedOrder.createdDate | date:'medium' }}</p>
+    <p>Expected Delivery: {{ selectedOrder.expectedDeliveryDate | date }}</p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Subtotal</th>
+          <th>Delivery (days)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of selectedOrder.items">
+          <td>{{ item.productName }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.unitPrice }}</td>
+          <td>{{ item.subtotal }}</td>
+          <td>{{ item.deliveryDays }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Total: {{ selectedOrder.totalAmount }}</h3>
+
+    <div class="row-actions">
+      <button
+        class="primary-button"
+        *ngIf="selectedOrder.orderStatus === 'Pending' && !currentPayment"
+        (click)="payNow()">
+        Pay Now
+      </button>
+
+      <button class="secondary-button" (click)="closeOrder()">Close</button>
+    </div>
+
+    <!-- CARD FORM -->
+
+    <div
+      class="card"
+      *ngIf="currentPayment && currentPayment.paymentStatus !== 'Succeeded'"
+      style="margin-top:15px;">
+
+      <h3>Pay with card (Stripe test mode)</h3>
+      <p>
+        Use a Stripe test card number. Examples:
+        <strong>4242 4242 4242 4242</strong> succeeds,
+        <strong>4000 0000 0000 0002</strong> is declined.
+      </p>
+
+      <div class="form-group">
+        <label>Cardholder Name</label>
+        <input type="text" [(ngModel)]="cardName" placeholder="Name on card" />
+      </div>
+
+      <div class="form-group">
+        <label>Card Number</label>
+        <input
+          type="text"
+          inputmode="numeric"
+          [ngModel]="cardNumber"
+          (ngModelChange)="onCardNumberInput($event)"
+          placeholder="4242 4242 4242 4242"
+          maxlength="23" />
+      </div>
+
+      <div class="form-group">
+        <label>Expiry (MM/YY)</label>
+        <input type="text" [(ngModel)]="cardExpiry" placeholder="12/34" maxlength="5" />
+      </div>
+
+      <div class="form-group">
+        <label>CVC</label>
+        <input type="text" inputmode="numeric" [(ngModel)]="cardCvc" placeholder="123" maxlength="4" />
+      </div>
+
+      <p *ngIf="cardError" class="error-message">{{ cardError }}</p>
+
+      <button class="primary-button" (click)="confirmPayment()">
+        Pay {{ currentPayment.currency }} {{ currentPayment.amount }}
+      </button>
+    </div>
+
+    <div
+      class="card"
+      *ngIf="currentPayment && currentPayment.paymentStatus === 'Succeeded'"
+      style="margin-top:15px;">
+      <p>Payment #{{ currentPayment.paymentId }} - {{ currentPayment.paymentStatus }}</p>
+      <p>Amount: {{ currentPayment.currency }} {{ currentPayment.amount }}</p>
+      <p>Stripe Payment ID: <strong>{{ currentPayment.stripePaymentIntentId }}</strong></p>
+    </div>
+
+  </div>
+
+</section>

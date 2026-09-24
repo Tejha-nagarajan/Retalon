@@ -1,0 +1,68 @@
+<section class="form-section">
+
+  <h2>Register</h2>
+
+  <div class="form-group">
+    <label>First Name</label>
+    <input type="text" [(ngModel)]="firstName" placeholder="First name">
+  </div>
+
+  <div class="form-group">
+    <label>Last Name</label>
+    <input type="text" [(ngModel)]="lastName" placeholder="Last name">
+  </div>
+
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" placeholder="Enter email">
+  </div>
+
+  <div class="form-group">
+    <label>Password</label>
+    <input type="password" [(ngModel)]="password" placeholder="At least 8 characters">
+  </div>
+
+  <div class="form-group">
+    <label>Phone Number</label>
+    <input type="text" [(ngModel)]="phoneNumber" placeholder="Phone number">
+  </div>
+
+  <div class="form-group">
+    <label>Address Line 1</label>
+    <input type="text" [(ngModel)]="addressLine1" placeholder="Address line 1">
+  </div>
+
+  <div class="form-group">
+    <label>Address Line 2</label>
+    <input type="text" [(ngModel)]="addressLine2" placeholder="Address line 2 (optional)">
+  </div>
+
+  <div class="form-group">
+    <label>City</label>
+    <input type="text" [(ngModel)]="city" placeholder="City">
+  </div>
+
+  <div class="form-group">
+    <label>State</label>
+    <input type="text" [(ngModel)]="state" placeholder="State">
+  </div>
+
+  <div class="form-group">
+    <label>Postal Code</label>
+    <input type="text" [(ngModel)]="postalCode" placeholder="Postal code">
+  </div>
+
+  <div class="form-group">
+    <label>Country</label>
+    <input type="text" [(ngModel)]="country" placeholder="Country">
+  </div>
+
+  <button class="primary-button" [disabled]="isSubmitting" (click)="submit()">
+    Register
+  </button>
+
+  <p *ngIf="message" [class]="isError ? 'error-message' : 'success-message'">
+    {{ message }}
+  </p>
+
+</section>

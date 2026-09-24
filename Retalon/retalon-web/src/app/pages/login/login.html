@@ -1,0 +1,21 @@
+<section class="form-section">
+
+  <h2>Login</h2>
+
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" placeholder="Enter email">
+  </div>
+
+  <div class="form-group">
+    <label>Password</label>
+    <input type="password" [(ngModel)]="password" placeholder="Enter password">
+  </div>
+
+  <button class="primary-button" [disabled]="isSubmitting" (click)="submit()">
+    Login
+  </button>
+
+  <p *ngIf="message" class="error-message">{{ message }}</p>
+
+</section>

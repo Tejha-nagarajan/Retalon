@@ -5,11 +5,11 @@ import {
   provideHttpClientTesting
 } from '@angular/common/http/testing';
 
-import { Health } from './health';
+import { CategoryService } from './category.service';
 import { environment } from '../../environments/environment';
 
-describe('Health', () => {
-  let service: Health;
+describe('CategoryService', () => {
+  let service: CategoryService;
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
@@ -17,22 +17,18 @@ describe('Health', () => {
       providers: [provideHttpClient(), provideHttpClientTesting()]
     });
 
-    service = TestBed.inject(Health);
+    service = TestBed.inject(CategoryService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => httpMock.verify());
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
+  it('getCategories sends a GET to /api/categories', () => {
+    service.getCategories().subscribe();
 
-  it('checkHealth sends a GET to /health', () => {
-    service.checkHealth().subscribe();
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/health`);
+    const req = httpMock.expectOne(`${environment.apiUrl}/api/categories`);
     expect(req.request.method).toBe('GET');
 
-    req.flush({ status: 'Healthy' });
+    req.flush([{ categoryId: 1, name: 'Dairy' }]);
   });
 });

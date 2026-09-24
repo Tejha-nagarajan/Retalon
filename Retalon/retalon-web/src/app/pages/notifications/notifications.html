@@ -1,0 +1,24 @@
+<section class="form-section">
+
+  <h2>Send Test Email</h2>
+
+  <div class="form-group">
+    <label>To Email</label>
+    <input type="email" [(ngModel)]="toEmail" placeholder="Recipient email">
+  </div>
+
+  <div class="form-group">
+    <label>Subject</label>
+    <input type="text" [(ngModel)]="subject">
+  </div>
+
+  <div class="form-group">
+    <label>Body</label>
+    <textarea rows="4" [(ngModel)]="body"></textarea>
+  </div>
+
+  <button class="primary-button" [disabled]="isSubmitting" (click)="send()">Send Test Email</button>
+
+  <p *ngIf="message" [class]="isError ? 'error-message' : 'success-message'">{{ message }}</p>
+
+</section>

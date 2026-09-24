@@ -1,0 +1,75 @@
+<section>
+
+  <h2>Procurement</h2>
+
+  <p *ngIf="message" [class]="isError ? 'error-message' : 'success-message'">{{ message }}</p>
+
+  <div class="card">
+    <h3>Create Procurement For an Order</h3>
+    <p class="hint">This creates a procurement record for every item in the selected order.</p>
+
+    <div class="search-box">
+      <select [(ngModel)]="createOrderId">
+        <option [ngValue]="null">Select an order</option>
+        <option *ngFor="let order of orders" [ngValue]="order.orderId">
+          Order #{{ order.orderId }} - {{ order.orderStatus }} - {{ order.totalAmount }}
+        </option>
+      </select>
+
+      <button class="primary-button" (click)="createProcurement()">Create Procurement</button>
+    </div>
+  </div>
+
+  <div *ngIf="procurements.length === 0">
+    <p>No procurement records yet.</p>
+  </div>
+
+  <table class="table" *ngIf="procurements.length > 0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Order #</th>
+        <th>Product #</th>
+        <th>Qty</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let procurement of procurements">
+        <td>{{ procurement.procurementId }}</td>
+        <td>{{ procurement.orderId }}</td>
+        <td>{{ procurement.productId }}</td>
+        <td>{{ procurement.requiredQuantity }}</td>
+        <td><span [class]="badgeClass(procurement.procurementStatus)">{{ procurement.procurementStatus }}</span></td>
+        <td>
+          <button class="secondary-button" (click)="viewProcurement(procurement)">View</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="details-box" *ngIf="selectedProcurement">
+
+    <h3>Procurement #{{ selectedProcurement.procurementId }}</h3>
+    <p>Order: #{{ selectedProcurement.orderId }}</p>
+    <p>Product: #{{ selectedProcurement.productId }}</p>
+    <p>Required Quantity: {{ selectedProcurement.requiredQuantity }}</p>
+    <p>Status: <span [class]="badgeClass(selectedProcurement.procurementStatus)">{{ selectedProcurement.procurementStatus }}</span></p>
+    <p>Expected Arrival: {{ selectedProcurement.expectedArrivalDate | date }}</p>
+
+    <div class="form-group" *ngIf="isStaff()" style="max-width:250px;">
+      <label>Update Status</label>
+      <select [(ngModel)]="newStatus">
+        <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+      </select>
+    </div>
+
+    <div class="row-actions">
+      <button class="primary-button" *ngIf="isStaff()" (click)="updateStatus()">Save Status</button>
+      <button class="secondary-button" (click)="closeProcurement()">Close</button>
+    </div>
+
+  </div>
+
+</section>

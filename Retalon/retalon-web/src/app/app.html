@@ -1,3 +1,69 @@
-<h1>Retalon</h1>
+<div class="app">
 
-<p>{{ healthStatus() }}</p>
+  <!-- NAVBAR -->
+
+  <header class="navbar">
+
+    <div class="logo">Retalon</div>
+
+    <nav>
+
+      <button class="nav-button" [class.active]="currentPage === 'home'" (click)="goTo('home')">Home</button>
+      <button class="nav-button" [class.active]="currentPage === 'products'" (click)="goTo('products')">Products</button>
+
+      <button *ngIf="isLoggedIn()" class="nav-button" [class.active]="currentPage === 'cart'" (click)="goTo('cart')">Cart</button>
+      <button *ngIf="isLoggedIn()" class="nav-button" [class.active]="currentPage === 'orders'" (click)="goTo('orders')">Orders</button>
+      <button *ngIf="isLoggedIn()" class="nav-button" [class.active]="currentPage === 'procurement'" (click)="goTo('procurement')">Procurement</button>
+      <button *ngIf="isLoggedIn()" class="nav-button" [class.active]="currentPage === 'inventory'" (click)="goTo('inventory')">Inventory</button>
+      <button *ngIf="isLoggedIn()" class="nav-button" [class.active]="currentPage === 'notifications'" (click)="goTo('notifications')">Notifications</button>
+      <button *ngIf="isLoggedIn() && isStaff()" class="nav-button" [class.active]="currentPage === 'admin-import'" (click)="goTo('admin-import')">Admin Import</button>
+
+      <span class="nav-divider"></span>
+
+      <button *ngIf="!isLoggedIn()" class="nav-button" [class.active]="currentPage === 'register'" (click)="goTo('register')">Register</button>
+      <button *ngIf="!isLoggedIn()" class="nav-button nav-button-cta" (click)="goTo('login')">Login</button>
+      <button *ngIf="isLoggedIn()" class="nav-button" (click)="logout()">Logout</button>
+
+    </nav>
+
+  </header>
+
+  <!-- MAIN -->
+
+  <main class="container">
+
+    <app-home *ngIf="currentPage === 'home'"></app-home>
+
+    <app-register
+      *ngIf="currentPage === 'register'"
+      (registered)="goTo('login')">
+    </app-register>
+
+    <app-login
+      *ngIf="currentPage === 'login'"
+      (loggedIn)="goTo('products')">
+    </app-login>
+
+    <app-products
+      *ngIf="currentPage === 'products'"
+      (goToLogin)="goTo('login')">
+    </app-products>
+
+    <app-cart
+      *ngIf="currentPage === 'cart'"
+      (orderPlaced)="goTo('orders')">
+    </app-cart>
+
+    <app-orders *ngIf="currentPage === 'orders'"></app-orders>
+
+    <app-procurement *ngIf="currentPage === 'procurement'"></app-procurement>
+
+    <app-inventory *ngIf="currentPage === 'inventory'"></app-inventory>
+
+    <app-notifications *ngIf="currentPage === 'notifications'"></app-notifications>
+
+    <app-admin-import *ngIf="currentPage === 'admin-import'"></app-admin-import>
+
+  </main>
+
+</div>
